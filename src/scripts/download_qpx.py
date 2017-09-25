@@ -80,7 +80,7 @@ if __name__ == "__main__":
     gflags.DEFINE_string(
         "api_key",
         # TODO: Use a shell variable instead of checking this in!
-        default="AIzaSyBa4twbD2iqtipo3GWIVyGzGau2dYLpLUw",
+        default=None,
         help="The QPX API key to use")
     gflags.FLAGS.UseGnuGetOpt(True)
     gflags.FLAGS(sys.argv)
