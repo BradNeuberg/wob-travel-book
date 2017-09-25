@@ -75,8 +75,7 @@ def save_raw(origin, dest, date, data, out_raw):
     print("\tSaving {} -> {} for {} to {}".format(origin, dest, date.strftime("%Y-%m-%d"),
                                                   date_filename))
     with open(date_filename, "w") as f:
-        # Make sure results are saved as Unicode.
-        json.dump(data, f)
+        json.dump(data, f, indent=4, sort_keys=True)
 
 
 def main(api_key, out_raw):
