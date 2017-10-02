@@ -1,6 +1,26 @@
+# Installation
+
+```
 mkvirtualenv scripts
 workon scripts
 
 pip install -r requirements.txt
+```
 
-python ./src/scripts/download_qpx.py --api_key=<INSERT QPX KEY HERE>
+# Bootstrapping Data
+
+Downloading raw QPX JSON data:
+
+```
+python ./src/scripts/download_qpx.py --api_key=<YOUR QPX API KEY>
+```
+
+The raw data is quite large, so we have a script that simplifies it into a single `simplified_routes.json` file for efficiently serving it on the web:
+
+```
+python ./scr/scripts/simplify_data.py
+```
+
+# Running Web Client/Server
+
+In progress
