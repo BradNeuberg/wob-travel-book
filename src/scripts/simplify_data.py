@@ -114,8 +114,9 @@ def main(raw_path_root, output_filename):
 
     print("Saving results to {}".format(output_filename))
     with open(output_filename, "w") as f:
+        f.write("window.simplified_routes = ")
         json.dump(routes, f, indent=4, sort_keys=True)
-
+        f.write(";")
 
 if __name__ == "__main__":
     gflags.DEFINE_string(
@@ -124,7 +125,7 @@ if __name__ == "__main__":
         help="Where our raw QPX request data was saved")
     gflags.DEFINE_string(
         "output_filename",
-        default="./data/simplified_routes.json",
+        default="./data/simplified_routes.js",
         help="The final simplified JSON file that will contain our route data")
     gflags.FLAGS.UseGnuGetOpt(True)
     gflags.FLAGS(sys.argv)

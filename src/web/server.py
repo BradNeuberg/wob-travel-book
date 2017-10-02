@@ -20,18 +20,18 @@ class TravelBookHandler(SimpleHTTPRequestHandler):
         # to improve page loading time to speed up experiments.
         logging.info(self.path)
         if "simplified_routes.json" in self.path:
+            logging.info("Request for simplified_routes.js...")
             content = TravelBookHandler.simplified_routes
             self.send_response(200)
-            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Type", "text/javascript")
             self.send_header("Content-Length", str(len(str(content))))
             self.send_header("Content-Encoding", "gzip")
-            # Cache this file forever; clients will need to append a query string to the end with a
-            # version to invalidate and get a new version, such as fetching
-            # simplified_routes.json?version=1.
-            self.send_header("Cache-Control", "max-age=31556926") # One year
+            # Cache this file forever.
+            self.send_header("Cache-Control", "max-age=31536000") # One year
             self.end_headers()
             self.wfile.write(content)
             self.wfile.flush()
+            logging.info("--Request for simplified_routes.js finished")
         else:
             SimpleHTTPRequestHandler.do_GET(self)
 
@@ -44,7 +44,7 @@ def gzip_encode(content):
     return out.getvalue()
 
 
-def main(host="127.0.0.1", port=8000, simplified_routes_path="./data/simplified_routes.json"):
+def main(host="127.0.0.1", port=8000, simplified_routes_path="./data/simplified_routes.js"):
     with open(simplified_routes_path, "rb") as f:
         simplified_routes = f.read()
 
