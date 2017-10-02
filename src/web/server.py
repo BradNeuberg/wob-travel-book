@@ -4,6 +4,7 @@ Web server to efficiently serve up the WOB travel booking sandbox.
 """
 import gzip
 import logging
+import os
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import StringIO
@@ -14,6 +15,7 @@ logging.getLogger("").setLevel(logging.INFO)
 
 class TravelBookHandler(SimpleHTTPRequestHandler):
     simplified_routes = None
+    simplified_routes_mtime_s = None
 
     def do_GET(self):
         # Our routes file is quite large; make sure to GZip compress it and have good caching headers
@@ -28,6 +30,7 @@ class TravelBookHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-Encoding", "gzip")
             # Cache this file forever.
             self.send_header("Cache-Control", "max-age=31536000") # One year
+            self.send_header("Last-Modified", self.date_time_string(self.simplified_routes_mtime_s))
             self.end_headers()
             self.wfile.write(content)
             self.wfile.flush()
@@ -49,6 +52,7 @@ def main(host="127.0.0.1", port=8000, simplified_routes_path="./data/simplified_
         simplified_routes = f.read()
 
     TravelBookHandler.simplified_routes = gzip_encode(simplified_routes)
+    TravelBookHandler.simplified_routes_mtime_s = os.path.getmtime(simplified_routes_path)
     TravelBookHandler.protocol_version = "HTTP/1.1"
     httpd = HTTPServer((host, port), TravelBookHandler)
 
