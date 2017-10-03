@@ -1,12 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" href="index.css" />
+
     <script src="/data/simplified_routes.js"></script>
-    <script>
-        console.log(window.simplified_routes);
-    </script>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="index.js"></script>
 </head>
 <body>
-    <h1>Hello World!</h1>
+    <section id="search-page">
+        <h1>FalseXpedia</h1>
+        <h2>Your Goto for Fake Flights</h2>
+        <form id="search-form">
+            <label for="origin">
+                Origin
+            </label>
+            <input type="text" id="origin" name="origin" autocomplete="off" />
+
+            <label for="destination">
+                Destination
+            </label>
+            <input type="text" id="destination" name="destination" autocomplete="off" />
+
+            <label for="departure">
+                Departure
+            </label>
+            <input type="text" id="departure" name="departure" autocomplete="off" />
+
+            <button type="submit" id="search">Search</button>
+        </form>
+    </section>
+
+    <section id="results-page" class="hidden-section">
+        <h1>Flight Results</h1>
+
+        <select id="sort">
+            <option value="lowest_price">Price (Lowest)</option>
+            <option value="shortest_duration">Duration (Shortest)</option>
+        </select>
+
+        <div id="results">
+            <!-- Sample template in HTML we can clone from. -->
+            <div class="result-template">
+                <div>
+                    <span class="start-and-end">6:15am - 7:35pm</span>
+                    <span class="start-stop-airports">SFO - CDG</span>
+                </div>
+                <div class="airline">Virgin Galactic</div>
+
+                <div class="total-time">22 hours</div>
+
+                <div>
+                    <span class="num-stops">1 stop</span>
+                    <span class="layover-details">Layover in LAX</span>
+                </div>
+
+                <div class="select-box">
+                    <span class="total-price">$777</span>
+                    <button class="select">Select</button>
+                </div>
+            </div>          
+        </div>
+    </section>
 </body>
 </html>

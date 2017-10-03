@@ -1,0 +1,153 @@
+html {
+    background-color: white;
+}
+
+body {
+    width: 320px;
+    height: 568px;
+    background-color: DimGrey;
+    border: 1px solid gray;
+    padding: 1em;
+    margin-top: 0;
+    margin-left: 0;
+}
+
+.hidden-section {
+    display: none;
+}
+
+#search-page h1,
+#search-page h2 {
+    color: white;
+}
+
+#search-page h1 {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#search-page h2 {
+    margin-top: 5px;
+    font-size: 18px;
+}
+
+#search-page label,
+#search-page input {
+    display: block;
+}
+
+#search-page label:nth-of-type(1) {
+    margin-top: 25px;
+}
+
+#search-page label {
+    margin-top: 1.2em;
+    margin-bottom: 4px;
+    color: #c7c7c7;
+}
+
+#search-page input {
+    font-size: 16px;
+    padding: 2px;
+}
+
+#search-page button {
+    float: right;
+    margin-top: 30px;
+    border: 1px solid gray;
+    background-color: yellow;
+    font-size: 16px;
+}
+
+#search-page .required {
+    color: red !important;
+}
+
+#search-page .required:after {
+    content: " (required)";
+}
+
+#results-page {
+    height: 568px;
+}
+
+#results-page h1 {
+    color: white;
+    margin-top: 0em;
+    margin-bottom: 10px;
+}
+
+#results-page #sort {
+    font-size: 14px;
+    float: right;
+}
+
+#results {
+    overflow: auto;
+    min-height: 90%;
+    max-height: 90%;
+    width: 100%;
+    margin-top: 0;
+}
+
+.result-template {
+    display: none;
+}
+
+.result {
+    background-color: white;
+    padding: 10px;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.result .start-and-end {
+    font-weight: bold;
+}
+
+.result .start-stop-airports {
+    color: gray;
+    font-size: 14px;
+    margin-left: 8px;
+}
+
+.result .airline {    
+    color: gray;
+    font-size: 14px;
+}
+
+.result .total-time {
+    font-weight: bold;
+    margin-top: 8px;
+    margin-bottom: 5px;
+}
+
+.result .layover-details {
+    color: gray;
+    font-size: 14px;
+    margin-left: 8px;
+}
+
+.result .select-box {
+    text-align: right;
+    height: 1.5em;
+    margin-top: 5px;
+}
+
+.result .total-price {
+    font-weight: bold;
+    margin-right: 5px;
+    vertical-align: middle;
+    height: 1em;
+    position: relative;
+    top: 2px;
+}
+
+.result .select {
+    border: none;
+    background-color: yellow;
+    font-size: 16px;
+    border-radius: 4px;
+    box-shadow: 1px 1px 1px #888888;
+    vertical-align: middle;
+}
