@@ -23,4 +23,8 @@ python ./scr/scripts/simplify_data.py
 
 # Running Web Client/Server
 
-In progress
+```
+./src/web/server.py
+```
+
+In browser navigate to: http://127.0.0.1:8000/src/web/
