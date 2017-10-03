@@ -5,8 +5,10 @@ Web server to efficiently serve up the WOB travel booking sandbox.
 import gzip
 import logging
 import os
+import threading
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
+from SocketServer import ThreadingMixIn
 import StringIO
 
 
@@ -39,6 +41,10 @@ class TravelBookHandler(SimpleHTTPRequestHandler):
             SimpleHTTPRequestHandler.do_GET(self)
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle requests in a separate thread."""
+
+
 def gzip_encode(content):
     out = StringIO.StringIO()
     f = gzip.GzipFile(fileobj=out, mode='w', compresslevel=5)
@@ -54,7 +60,7 @@ def main(host="127.0.0.1", port=8000, simplified_routes_path="./data/simplified_
     TravelBookHandler.simplified_routes = gzip_encode(simplified_routes)
     TravelBookHandler.simplified_routes_mtime_s = os.path.getmtime(simplified_routes_path)
     TravelBookHandler.protocol_version = "HTTP/1.1"
-    httpd = HTTPServer((host, port), TravelBookHandler)
+    httpd = ThreadedHTTPServer((host, port), TravelBookHandler)
 
     logging.info("Serving at host {} and port {}".format(host, port))
     httpd.serve_forever()
