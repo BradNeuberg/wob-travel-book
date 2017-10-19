@@ -1,3 +1,8 @@
+// Configure our core RL framework.
+core.EPISODE_MAX_TIME = 30000;  // set episode interval to 30 seconds
+
+current_reward = 0;
+
 function setupDetails(simplifiedRoutes){
     // TODO(bneuberg): We should probably setup these dictionaries
     // in the simplify_data.py script beforehand.
@@ -19,20 +24,61 @@ function setupDetails(simplifiedRoutes){
     return routeDetails;
 }
 
-function showResults(routeDetails, origin, destination, departure){
+function showSearchResults(routeDetails, origin, destination, departure){
     results = getResults(routeDetails, origin, destination, departure);
     if (!results){
         return;
     }
 
-    $("#search-page").toggleClass("hidden-section");
-    $("#results-page").toggleClass("hidden-section");
+    $("#search-page").addClass("hidden-section");
+    $("#results-page").removeClass("hidden-section");
 
+    $("#sort").change(function(evt){
+        if (evt.target.value == 'lowest_price'){
+            sortByLowestPrice(origin, destination, departure, results);
+        } else if (evt.target.value == 'shortest_duration'){
+            sortByShortestDuration(origin, destination, departure, results);
+        }
+    });
+
+    updateResults(origin, destination, departure, results);
+}
+
+function sortByLowestPrice(origin, destination, departure, results){
+    results.sort(function(a, b){
+        a_price = parseFloat(a.sale_total.replace("USD", ""));
+        b_price = parseFloat(b.sale_total.replace("USD", ""));
+        if (a_price < b_price){
+            return -1;
+        } else if (a_price == b_price){
+            return 0;
+        } else {
+            return 1;
+        }
+    });
+    updateResults(origin, destination, departure, results);
+}
+
+function sortByShortestDuration(origin, destination, departure, results){
+    results.sort(function(a, b){
+        a_time = a.duration_minutes;
+        b_time = b.duration_minutes;
+        if (a_time < b_time){
+            return -1;
+        } else if (a_time == b_time){
+            return 0;
+        } else {
+            return 1;
+        }
+    });
+    updateResults(origin, destination, departure, results);
+}
+
+function updateResults(origin, destination, departure, results){
     $("#results-page .result").remove();
 
     template = $(".result-template");
-    for (var i = 0; i < results.length; i++){
-        result = results[i];
+    results.forEach(function(result){
         node = template.clone();
         node.removeClass("result-template").addClass("result");
         segments = result.segments;
@@ -54,7 +100,7 @@ function showResults(routeDetails, origin, destination, departure){
         if (durationMinutes > 0){
             totalDuration = durationHours + "h " + durationMinutes + "m";
         } else {
-            tutalDuration = durationHours + "h";
+            totalDuration = durationHours + "h";
         }
         $(".total-time", node).text(totalDuration);
 
@@ -84,8 +130,12 @@ function showResults(routeDetails, origin, destination, departure){
         price = result.sale_total.replace("USD", "$");
         $(".total-price", node).text(price);
 
+        $("button.select", node).click(function(){
+            selectResult(origin, destination, departure, result);
+        });
+
         $("#results-page #results").append(node);
-    }
+    });
 }
 
 function toTimeStr(time){
@@ -101,16 +151,47 @@ function toTimeStr(time){
     return hours + ":" + minutes;
 }
 
+function selectResult(origin, destination, departure, result){
+    correctStr = core.QueryString["origin"] + " -> " +
+                 core.QueryString["destination"] + " on " +
+                 core.QueryString["departure"] + " focused on " +
+                 core.QueryString["optimize"].replace("_", " ");
+
+    var correctResult = false;
+    // TODO: Perhaps think about giving partial credit for being partially
+    // correct on some of these for reward shaping.
+    if (core.QueryString["origin"] == origin &&
+        core.QueryString["destination"] == destination &&
+        core.QueryString["departure"] == departure){
+        if (core.QueryString["optimize"] == "lowest_price" &&
+            result.cheapest_fare){
+            correctResult = true;
+        } else if (core.QueryString["optimize"] == "shortest_duration" &&
+            result.shortest_duration){
+            correctResult = true;
+        }
+    }
+    var actualStr = origin + " -> " + destination + " on " +
+                    departure + " lowest price: " + result.cheapest_fare +
+                    " shortest duration: " + result.shortest_duration;
+    console.log("Selected result, correct result: " + correctResult +
+                ", correct details: '" + correctStr +
+                "', actual details: '" + actualStr + "'");
+
+    finalScore = correctResult ? 1 : -1;
+    core.endEpisode(finalScore, correctResult);
+}
+
 function getResults(routeDetails, origin, destination, departure){
     originDetails = routeDetails[origin];
     if (!originDetails){
-        printUnknown("origin");
+        printUnknown("Origin", origin);
         return;
     }
 
     destinationDetails = originDetails[destination];
     if (!destinationDetails){
-        printUnknown("destination");
+        printUnknown("Destination", destination);
         return;
     }
 
@@ -121,20 +202,54 @@ function getResults(routeDetails, origin, destination, departure){
     departureDetails = destinationDetails[date];
 
     if (!departureDetails){
-        printUnknown("departure date");
+        printUnknown("Departure Date", date);
         return;
     }
 
     return departureDetails.results;
 }
 
-function printUnknown(unknownType){
-    // TODO
+function printUnknown(unknownType, details){
+    $("#unknown-page .unknown-type").text(unknownType);
+    $("#unknown-page .unknown-details").text(details);
+    $("#search-page").addClass("hidden-section");
+    $("#unknown-page").removeClass("hidden-section");
+
+    core.endEpisode(-1);
 }
 
-$(function(){
+function resetUI(){
+    current_reward = 0;
+    $('input').each(function(idx, elem){
+        elem.value = "";
+    });
+    $('#search-page').removeClass('hidden-section');
+    $('section:not(#search-page)').addClass('hidden-section');
+    $('#sort').val("lowest_price");
+}
+
+function assertCorrectQueryString(){
+    if (!core.QueryString["origin"]){
+        console.error("Must provide desired 'origin' field in query string");
+    }
+    if (!core.QueryString["destination"]){
+        console.error("Must provide desired 'destination' field in query string");
+    }
+    if (!core.QueryString["departure"]){
+        console.error("Must provide desired 'departure' field in query string");
+    }
+    if (!core.QueryString["optimize"]){
+        console.error("Must provide desired 'optimize' field in query string " +
+                      "set to either 'lowest_price' or 'shortest_duration'");
+    }
+}
+
+function genProblem(){
+    resetUI();
+    // TODO: Think about adding some randomness into our routes and results at some point.
     routeDetails = setupDetails(window.simplified_routes);
-    console.log(routeDetails);
+
+    assertCorrectQueryString();
 
     $("#departure").datepicker();
     $("#search-form").submit(function(e){
@@ -157,8 +272,17 @@ $(function(){
             $("label[for='departure']").addClass("required");
         }
 
+        // TODO: See if some reward shaping by giving partial credit if the correct
+        // origin, destination, or departure are given is useful.
+
         if (origin && destination && departure){
-            showResults(routeDetails, origin, destination, departure)
+            $(".required").removeClass("required");
+            showSearchResults(routeDetails, origin, destination, departure)
         }
     });
+}
+
+$(function(){
+    genProblem(); // start things off on load immediately
+    core.startEpisode();
 });
