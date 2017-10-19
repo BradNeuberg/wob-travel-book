@@ -1,3 +1,7 @@
+# Introduction
+
+This repo contains a small sandbox implementing a web-based flight booking site, useful for training Reinforcement Learning agents for the World of Bits problem.
+
 # Installation
 
 ```
@@ -21,7 +25,7 @@ The raw data is quite large, so we have a script that simplifies it into a singl
 python ./scr/scripts/simplify_data.py
 ```
 
-# Running Web Client/Server
+# Running Web Server
 
 ```
 ./src/web/server.py
