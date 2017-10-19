@@ -28,3 +28,7 @@ python ./scr/scripts/simplify_data.py
 ```
 
 In browser navigate to: http://127.0.0.1:8000/src/web/
+
+You will need to provide on the URL the correct templated origin, destination, departure, and what you are optimizing for (either "lowest_price" or "shortest_duration"). Example:
+
+http://127.0.0.1:8000/src/web/?origin=JFK&destination=SFO&departure=12/29/2017&optimize=shortest_duration
