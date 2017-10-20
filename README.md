@@ -4,11 +4,20 @@ This repo contains a small sandbox implementing a web-based flight booking site,
 
 # Installation
 
+Make sure Python 2.7+ is installed, setup a virtualenv environment, and install PIP dependencies:
+
+
 ```
 mkvirtualenv scripts
 workon scripts
 
 pip install -r requirements.txt
+```
+
+Ensure your `PYTHONPATH` is correct to where you've checked the git repo out plus the `src` sub-directory:
+
+```
+export PYTHONPATH=$PYTHONPATH:~/src/wob/wob-travel-book/src
 ```
 
 # Bootstrapping Data
@@ -36,3 +45,11 @@ In browser navigate to: http://127.0.0.1:8000/src/web/
 You will need to provide on the URL the correct templated origin, destination, departure, and what you are optimizing for (either "lowest_price" or "shortest_duration"). Example:
 
 http://127.0.0.1:8000/src/web/?origin=JFK&destination=SFO&departure=12/29/2017&optimize=shortest_duration
+
+# Running Flight Gym
+
+Open another console and start:
+
+```
+./src/flight_gym/flight_gym.py
+```
