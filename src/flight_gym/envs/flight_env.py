@@ -1,11 +1,17 @@
 import collections
+from cStringIO import StringIO
 import logging
 from enum import IntEnum
+from PIL import Image
 
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
+
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 
 logger = logging.getLogger(__name__)
@@ -15,16 +21,13 @@ HEIGHT = 568
 WIDTH = 320
 CHANNELS = 3
 
-# TODO: Actually confirm the pixel bit depth; it's probably much larger than whats provided here.
-MAX_PIXEL_VALUE = 32767
-
 
 class MouseAction(IntEnum):
-    no_op = 0
-    click = 1
-    drag = 2
-    scroll_up = 3
-    scroll_down = 4 
+    NO_OP = 0
+    CLICK = 1
+    DRAG = 2
+    SCROLL_UP = 3
+    SCROLL_DOWN = 4
 
 
 # Possible keys that an agent can press.
@@ -77,8 +80,7 @@ class FlightEnv(gym.Env):
     def __init__(self):
         self.observation_space = spaces.Dict({
             # Raw screen pixels observed in the web browser.
-            "screen_pixels": spaces.Box(low=0, high=MAX_PIXEL_VALUE,
-                                        shape=(HEIGHT, WIDTH, CHANNELS)),
+            "screen_pixels": spaces.Box(low=0, high=255, shape=(HEIGHT, WIDTH, CHANNELS)),
 
             # List of flattened DOM elements, annotated with their coordinates on screen
             # (x, y, w, h). Each entry also has an element type (DOMElementType), as well
@@ -99,23 +101,69 @@ class FlightEnv(gym.Env):
             # is y position. Note that 0 is reserved as a no-op.
             "mouse_cursor_pos": spaces.MultiDiscrete([[0, WIDTH + 1], [0, HEIGHT + 1]]),
             "mouse_action": spaces.Discrete(len(MouseAction)),
-            "key_action": spaces.Discrete(len(Keyboard)),
+
+            # List of keys in the order they will be pressed, or empty array if nothing
+            # is to be pressed.
+            "key_action": [spaces.Discrete(len(Keyboard))],
         })
         self.reward_range = (-1.0, 1.0)
 
+        self._initialized = False
         self._seed()
-
-        # TODO: Make selenium connection to browser here.
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def _reset(self):
+        if not self._initialized:
+            self._driver = webdriver.Chrome()
+            self._driver.get("http://127.0.0.1:8000/src/web")
+            self._body = self._driver.find_element_by_tag_name("body")
+            self._reset_button = self._driver.find_element_by_id("reset")
+        else:
+            ActionChains(self._driver).move_to_element(self._reset_button).click().perform()
+        self._initialized = True
+
+        return self._get_observation()
+
     def _step(self, action):
-        # TODO: Translate the action into a form the browser can run in Selenium,
-        # then get the results back as an observation to return.
+        assert self._initialized
+
+        if action is None:
+            action = {
+                "mouse_cursor_pos": [0, 0], # 0 is no-op
+                "mouse_action": MouseAction.NO_OP,
+                "key_action": [],
+            }
+
+        observation = None
+        reward = None
+        done = False
+        info = None
+
+        action_chain = ActionChains(self._driver)
+        if action["mouse_cursor_pos"] != [0, 0]:
+            action_chain = self._move_mouse_cursor(action, action_chain)
+
+        if action["mouse_action"] != MouseAction.NO_OP:
+            action_chain = self._take_mouse_action(action, action_chain)
+
+        # TODO: Handle keys.
+
+        action_chain.perform()
+
+        observation = self._get_observation()
+        return (observation, reward, done, info)
+
+    def _render(self, mode='human', close=False):
+        # TODO
+        assert self._initialized
+
+    def _get_observation(self):
         observation = {
-            "screen_pixels": np.random.randint(0, high=32767, size=(HEIGHT, WIDTH, CHANNELS)),
+            "screen_pixels": self._screenshot(),
+            # TODO: Derive DOM as well.
             "dom": [
                 {
                     "x": "10",
@@ -127,16 +175,35 @@ class FlightEnv(gym.Env):
                 }
             ],
         }
-        reward = 1.0
-        done = False
-        info = {}
-        return (observation, reward, done, info)
+        return observation
 
-    def _reset(self):
-        # TODO: Reset the browser environment and return an observation.
-        return self._step(action=None)
+    def _screenshot(self):
+        img = Image.open(StringIO(self._driver.get_screenshot_as_png()))
+        # It appears a screenshot on a retina screen is 2x the pixels; there doesn't
+        # seem to be a way to detect this.
+        # TODO: If we run this headless on Ubuntu double-check this logic to ensure
+        # we don't have improperly cropped images due to non-retina screens.
+        img = img.crop((0, 0, WIDTH*2, HEIGHT*2))
+        img = np.asarray(img, dtype="int32")
+        return img
 
-    def _render(self, mode='human', close=False):
-        # TODO
-        logger.info("FlightEnv._render")
-        pass
+    def _move_mouse_cursor(self, action, action_chain):
+        xoffset = action["mouse_cursor_pos"][0] - 1
+        yoffset = action["mouse_cursor_pos"][1] - 1
+        action_chain.move_to_element_with_offset(self._body, xoffset, yoffset)
+        return action_chain
+
+    def _take_mouse_action(self, action, action_chain):
+        if action["mouse_action"] == MouseAction.CLICK:
+            action_chain.click()
+        elif action["mouse_action"] == MouseAction.DRAG:
+            # TODO
+            pass
+        elif action["mouse_action"] == MouseAction.SCROLL_UP:
+            # TODO
+            pass
+        elif action["mouse_action"] == MouseAction.SCROLL_DOWN:
+            # TODO
+            pass
+
+        return action_chain
