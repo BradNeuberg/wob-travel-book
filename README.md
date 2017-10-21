@@ -46,6 +46,12 @@ You will need to provide on the URL the correct templated origin, destination, d
 
 http://127.0.0.1:8000/src/web/?origin=JFK&destination=SFO&departure=12/29/2017&optimize=shortest_duration
 
+# Setup Selenium
+
+We use Selenium to drive the flight sandbox via OpenAI Gym. To setup, download the latest Chrome WebDriver first (https://sites.google.com/a/chromium.org/chromedriver/downloads) and make sure it is in your `PATH`, such as placing it into `/usr/bin` or `/usr/local/bin`.
+
+You don't need to manually start Selenium; the OpenAI Gym wrapper will automatically start it.
+
 # Running Flight Gym
 
 Open another console and start:
