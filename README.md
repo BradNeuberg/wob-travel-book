@@ -22,6 +22,8 @@ export PYTHONPATH=$PYTHONPATH:~/src/wob/wob-travel-book/src
 
 # Bootstrapping Data
 
+Note that we have downloaded and cached data already present in `data/`, so this step is not necessary to get things running.
+
 Downloading raw QPX JSON data:
 
 ```
