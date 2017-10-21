@@ -13,6 +13,7 @@ body {
   padding: 1em;
   margin-top: 0;
   margin-left: 0;
+  box-sizing: border-box;
 }
 
 .query-area {
@@ -43,11 +44,12 @@ body {
   background-color: #EEE;
   font-size: 12px;
   width: 320px;
-  height: 578px;
+  height: 568px;
   position: absolute;
-  left: 379px;
-  top: 14px;
+  left: 340px;
+  top: 0px;
   padding: 1em;
+  box-sizing: border-box;
 }
 
 #reward-display .info {
