@@ -2,21 +2,25 @@
 core.EPISODE_MAX_TIME = 30000;  // set episode interval to 30 seconds
 
 current_reward = 0;
+query = {};
 
 function setupDetails(simplifiedRoutes){
+    // TODO: Think about adding some randomness into our base routes and
+    // results at some point.
+
     // TODO(bneuberg): We should probably setup these dictionaries
     // in the simplify_data.py script beforehand.
-    routeDetails = {};
+    var routeDetails = {};
     for (var i = 0; i < simplifiedRoutes.length; i++){
-        originDetails = simplifiedRoutes[i];
+        var originDetails = simplifiedRoutes[i];
         routeDetails[originDetails.airport_origin] = {};
         for (var j = 0; j < originDetails.destinations.length; j++){
-            destDetails = originDetails.destinations[j];
+            var destDetails = originDetails.destinations[j];
             routeDetails[originDetails.airport_origin][destDetails.dest] = {};
             for (var k = 0; k < destDetails.dates.length; k++){
-                dateDetails = destDetails.dates[k];
-                origin = originDetails.airport_origin;
-                dest = destDetails.dest;
+                var dateDetails = destDetails.dates[k];
+                var origin = originDetails.airport_origin;
+                var dest = destDetails.dest;
                 routeDetails[origin][dest][dateDetails.departure_date] = dateDetails;
             }
         }
@@ -25,7 +29,7 @@ function setupDetails(simplifiedRoutes){
 }
 
 function showSearchResults(routeDetails, origin, destination, departure){
-    results = getResults(routeDetails, origin, destination, departure);
+    var results = getResults(routeDetails, origin, destination, departure);
     if (!results){
         return;
     }
@@ -46,8 +50,8 @@ function showSearchResults(routeDetails, origin, destination, departure){
 
 function sortByLowestPrice(origin, destination, departure, results){
     results.sort(function(a, b){
-        a_price = parseFloat(a.sale_total.replace("USD", ""));
-        b_price = parseFloat(b.sale_total.replace("USD", ""));
+        var a_price = parseFloat(a.sale_total.replace("USD", ""));
+        var b_price = parseFloat(b.sale_total.replace("USD", ""));
         if (a_price < b_price){
             return -1;
         } else if (a_price == b_price){
@@ -61,8 +65,8 @@ function sortByLowestPrice(origin, destination, departure, results){
 
 function sortByShortestDuration(origin, destination, departure, results){
     results.sort(function(a, b){
-        a_time = a.duration_minutes;
-        b_time = b.duration_minutes;
+        var a_time = a.duration_minutes;
+        var b_time = b.duration_minutes;
         if (a_time < b_time){
             return -1;
         } else if (a_time == b_time){
@@ -77,11 +81,11 @@ function sortByShortestDuration(origin, destination, departure, results){
 function updateResults(origin, destination, departure, results){
     $("#results-page .result").remove();
 
-    template = $(".result-template");
+    var template = $(".result-template");
     results.forEach(function(result){
-        node = template.clone();
+        var node = template.clone();
         node.removeClass("result-template").addClass("result");
-        segments = result.segments;
+        var segments = result.segments;
 
         var startTime = toTimeStr(segments[0].departure_time);
         var endTime = toTimeStr(segments[segments.length - 1].arrival_time);
@@ -94,8 +98,8 @@ function updateResults(origin, destination, departure, results){
         var airline = segments.length == 1 ? segments[0].flight_carrier : "Multiple Airlines";
         $(".airline", node).text(airline);
 
-        durationHours = Math.floor(result.duration_minutes / 60);
-        durationMinutes = result.duration_minutes % 60;
+        var durationHours = Math.floor(result.duration_minutes / 60);
+        var durationMinutes = result.duration_minutes % 60;
         var totalDuration = "";
         if (durationMinutes > 0){
             totalDuration = durationHours + "h " + durationMinutes + "m";
@@ -120,14 +124,14 @@ function updateResults(origin, destination, departure, results){
                 layovers = "Layovers in ";
             }
 
-            layoverCities = segments.slice(1).map(function(entry){
+            var layoverCities = segments.slice(1).map(function(entry){
                 return entry.origin;
             });
             layovers += layoverCities.join(",");
         }
         $(".layover-details", node).text(layovers);
 
-        price = result.sale_total.replace("USD", "$");
+        var price = result.sale_total.replace("USD", "$");
         $(".total-price", node).text(price);
 
         $("button.select", node).click(function(){
@@ -139,9 +143,9 @@ function updateResults(origin, destination, departure, results){
 }
 
 function toTimeStr(time){
-    date = new Date(time);
-    hours = String(date.getUTCHours());
-    minutes = String(date.getUTCMinutes());
+    var date = new Date(time);
+    var hours = String(date.getUTCHours());
+    var minutes = String(date.getUTCMinutes());
     if (hours.length == 1){
         hours = "0" + hours;
     }
@@ -152,22 +156,20 @@ function toTimeStr(time){
 }
 
 function selectResult(origin, destination, departure, result){
-    correctStr = core.QueryString["origin"] + " -> " +
-                 core.QueryString["destination"] + " on " +
-                 core.QueryString["departure"] + " focused on " +
-                 core.QueryString["optimize"].replace("_", " ");
+    var correctStr = query["origin"] + " -> " +
+                     query["destination"] + " on " +
+                     query["departure"] + " focused on " +
+                     query["optimize"].replace("_", " ");
 
     var correctResult = false;
     // TODO: Perhaps think about giving partial credit for being partially
     // correct on some of these for reward shaping.
-    if (core.QueryString["origin"] == origin &&
-        core.QueryString["destination"] == destination &&
-        core.QueryString["departure"] == departure){
-        if (core.QueryString["optimize"] == "lowest_price" &&
-            result.cheapest_fare){
+    if (query["origin"] == origin &&
+        query["destination"] == destination &&
+        query["departure"] == departure){
+        if (query["optimize"] == "lowest_price" && result.cheapest_fare){
             correctResult = true;
-        } else if (core.QueryString["optimize"] == "shortest_duration" &&
-            result.shortest_duration){
+        } else if (query["optimize"] == "shortest_duration" && result.shortest_duration){
             correctResult = true;
         }
     }
@@ -178,18 +180,18 @@ function selectResult(origin, destination, departure, result){
                 ", correct details: '" + correctStr +
                 "', actual details: '" + actualStr + "'");
 
-    finalScore = correctResult ? 1 : -1;
+    var finalScore = correctResult ? 1 : -1;
     core.endEpisode(finalScore, correctResult);
 }
 
 function getResults(routeDetails, origin, destination, departure){
-    originDetails = routeDetails[origin];
+    var originDetails = routeDetails[origin];
     if (!originDetails){
         printUnknown("Origin", origin);
         return;
     }
 
-    destinationDetails = originDetails[destination];
+    var destinationDetails = originDetails[destination];
     if (!destinationDetails){
         printUnknown("Destination", destination);
         return;
@@ -197,9 +199,9 @@ function getResults(routeDetails, origin, destination, departure){
 
     // Calender widget gives results as MM/DD/YYYY, but we need to turn
     // it into YYYY_MM_DD.
-    pieces = departure.split("/")
-    date = pieces[2] + "_" + pieces[0] + "_" + pieces[1];
-    departureDetails = destinationDetails[date];
+    var pieces = departure.split("/")
+    var date = pieces[2] + "_" + pieces[0] + "_" + pieces[1];
+    var departureDetails = destinationDetails[date];
 
     if (!departureDetails){
         printUnknown("Departure Date", date);
@@ -220,6 +222,7 @@ function printUnknown(unknownType, details){
 
 function resetUI(){
     current_reward = 0;
+    query = {};
     $('input').each(function(idx, elem){
         elem.value = "";
     });
@@ -228,28 +231,42 @@ function resetUI(){
     $('#sort').val("lowest_price");
 }
 
-function assertCorrectQueryString(){
-    if (!core.QueryString["origin"]){
-        console.error("Must provide desired 'origin' field in query string");
+function generateRandomQuery(routeDetails){
+    // TODO: Set the random seed for repeatable tests.
+    var origins = Object.keys(routeDetails);
+    var origin = origins[Math.floor(Math.random() * origins.length)];
+
+    var destinations = Object.keys(routeDetails[origin]);
+    var destination = destinations[Math.floor(Math.random() * destinations.length)];
+
+    var departures = Object.keys(routeDetails[origin][destination]);
+    var departure = departures[Math.floor(Math.random() * departures.length)];
+    // Change from YYYY_MM_DD to MM/DD/YYYY.
+    var matches = departure.match(/([0-9]{4})_([0-9]{2})_([0-9]{2})/);
+    departure = matches[2] + "/" + matches[3] + "/" + matches[1];
+
+    var optimize;
+    if (Math.floor(Math.random() * 2) == 0){
+        optimize = "lowest_price";
+    } else {
+        optimize = "shortest_duration";
     }
-    if (!core.QueryString["destination"]){
-        console.error("Must provide desired 'destination' field in query string");
-    }
-    if (!core.QueryString["departure"]){
-        console.error("Must provide desired 'departure' field in query string");
-    }
-    if (!core.QueryString["optimize"]){
-        console.error("Must provide desired 'optimize' field in query string " +
-                      "set to either 'lowest_price' or 'shortest_duration'");
-    }
+
+    query = {
+        origin: origin,
+        destination: destination,
+        departure: departure,
+        optimize: optimize
+    };
+
+    return "Find a flight from " + origin + " to " + destination +
+        " departing " + departure + " with the " + optimize.replace("_", " ");
 }
 
 function genProblem(){
     resetUI();
-    // TODO: Think about adding some randomness into our routes and results at some point.
-    routeDetails = setupDetails(window.simplified_routes);
-
-    assertCorrectQueryString();
+    var routeDetails = setupDetails(window.simplified_routes);
+    var queryStr = generateRandomQuery(routeDetails);
 
     $("#departure").datepicker();
     $("#search-form").submit(function(e){
@@ -257,17 +274,17 @@ function genProblem(){
 
         $(".required").removeClass("required");
 
-        origin = $("#origin").val();
+        var origin = $("#origin").val();
         if (!origin){
             $("label[for='origin']").addClass("required");
         }
 
-        destination = $("#destination").val();
+        var destination = $("#destination").val();
         if (!destination){
             $("label[for='destination']").addClass("required");
         }
 
-        departure = $("#departure").val();
+        var departure = $("#departure").val();
         if (!departure){
             $("label[for='departure']").addClass("required");
         }
@@ -280,9 +297,11 @@ function genProblem(){
             showSearchResults(routeDetails, origin, destination, departure)
         }
     });
+
+    return queryStr;
 }
 
 $(function(){
-    genProblem(); // start things off on load immediately
-    core.startEpisode();
+    var queryStr = genProblem(); // start things off on load immediately
+    core.startEpisode(queryStr);
 });

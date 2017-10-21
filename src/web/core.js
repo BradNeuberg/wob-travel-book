@@ -18,8 +18,6 @@ core.sample = function(lst) {
 }
 
 // utilities for timing episodes
-var WOB_REWARD_GLOBAL = 0; // what was reward in previous iteration?
-var WOB_DONE_GLOBAL = false; // a done indicator
 core.EPISODE_MAX_TIME = 10000; // in ms. Set default time to 10s.
 
 // https://stackoverflow.com/questions/3169786/clear-text-selection-with-javascript
@@ -41,10 +39,10 @@ core.EP_TIMER = null; // stores timer id
 core.CD_TIMER = null; // stores timer ID for displaying rewards
 core.ept0; // stores system time when episode begins (so we can time it)
 
-core.startEpisode = function() {
-  WOB_DONE_GLOBAL = false;
+core.startEpisode = function(queryStr) {
   clearUserSelection();
   core.createDisplay();
+  core.updateQuery(queryStr);
   core.ept0 = new Date().getTime();
   core.countdownTimer(core.EPISODE_MAX_TIME);
   // start an end of episode timer
@@ -73,19 +71,9 @@ core.endEpisode = function(reward, time_proportional) {
     reward = reward * Math.max(0, 1.0 - dt/core.EPISODE_MAX_TIME);
   }
 
-  WOB_REWARD_GLOBAL += reward; // add to global, to be accessed from Python
-  WOB_DONE_GLOBAL = true;
   console.log('reward: ' + reward);
   core.updateDisplay(reward);
   core.clearTimer();
-
-  // start a new problem with a new timer. add a slight delay so that the problem
-  // isn't generated immediately, which can lead to accidental clicking.
-  setTimeout(function(){
-    genProblem();
-    core.startEpisode();
-  }, 500);
-
 }
 
 // returns parameters passed in the url.
@@ -117,18 +105,19 @@ core.getOpt = function(d, k, def) {
 
 core.DISPLAY_HTML = `
   <div id="reward-hide" onclick="core.hideDisplay();">X</div>
-  <div class="info">
-      <label>Last reward:</label>
-      <span id='reward-last'>-</span>
+  <div class="info query-area">
+    <label>Query:</label>
+    <span id="query">-</span>
   </div>
   <div class="info">
-      <label>Last 10 average:</label>
-      <span id='reward-avg'>-</span>
+      <label>Reward:</label>
+      <span id='reward'>-</span>
   </div>
   <div class="info">
       <label>Time left:</label>
       <span id='timer-countdown'>-</span>
   </div>
+  <button id="reset" onclick="core.reset();">Reset</button>
 `;
 
 // create element via JS; appending the HTML template
@@ -142,75 +131,14 @@ core.createDisplay = function(){
     newDiv.innerHTML = core.DISPLAY_HTML;
     document.body.appendChild(newDiv);
   }
-
-  core.reloadDisplay();
 }
 
-core.get_wob_scores = function(){
-  var scores = localStorage.getItem('wob_scores');
-  if(scores === null) return [];
-  else return JSON.parse(scores);
-}
-
-core.set_wob_scores = function(wob_scores){
-  var pickled = JSON.stringify(wob_scores);
-  localStorage.setItem('wob_scores', pickled);
-}
-
-core.get_wob_latest = function(){
-  var score = localStorage.getItem('wob_latest');
-  if(score === null) return '-';
-  return JSON.parse(score);
-}
-
-core.set_wob_latest = function(wob_score){
-  var pickled = JSON.stringify(wob_score)
-  localStorage.setItem('wob_latest', pickled);
-}
-
-// reload the display, reward stats should be persistent
-// across all tasks and not just within a single task.
-core.reloadDisplay = function(){
-  var wob_latest = core.get_wob_latest();
-  core.wob_scores = core.get_wob_scores();
-
-  if(wob_latest !== '-'){
-    var latestColor = core.computeColor(wob_latest);
-    document.getElementById('reward-last').setAttribute('style', 'color: ' + latestColor);
-    document.getElementById('reward-last').innerHTML = wob_latest.toFixed(2);
-  }
-
-  if(core.wob_scores.length > 0){
-    var avg = core.rewardAvg();
-    var avgColor = core.computeColor(avg);
-    document.getElementById('reward-avg').setAttribute('style', 'color: ' + avgColor);
-    document.getElementById('reward-avg').innerHTML = avg.toFixed(2);
-  }
+core.updateQuery = function(queryStr){
+  document.getElementById('query').innerText = queryStr;
 }
 
 core.updateDisplay = function(reward){
-  core.wob_scores.push(reward);
-  core.wob_scores = core.wob_scores.splice(-10); // only keep the last 10 rewards.
-
-  core.set_wob_scores(core.wob_scores);
-  core.set_wob_latest(reward);
-
-  var avg = core.rewardAvg();
-  var avgColor = core.computeColor(avg);
-  var latestColor = core.computeColor(reward);
-
-  // update text and set the appropriate colors.
-  document.getElementById('reward-avg').setAttribute('style', 'color: ' + avgColor);
-  document.getElementById('reward-avg').innerHTML = avg.toFixed(2);
-  document.getElementById('reward-last').setAttribute('style', 'color: ' + latestColor);
-  document.getElementById('reward-last').innerHTML = reward.toFixed(2);
-}
-
-// only computes for last X tasks.
-core.rewardAvg = function(){
-  var toCompute = core.wob_scores.slice();
-  var total = toCompute.reduce(function(a,b){ return a+b; });
-  return total/toCompute.length;
+  document.getElementById('reward').innerHTML = reward;
 }
 
 // use RGB values for setting CSS font color.
@@ -245,7 +173,7 @@ core.countdownTimer = function(et){
     var cd = document.getElementById('timer-countdown');
     if (currentTime <= 0){
       cd.setAttribute('style', 'color: red');
-      cd.innerHTML = '0 / ' + episodeTime + 's';
+      cd.innerHTML = 'done';
       window.clearInterval(core.CD_TIMER);
       return;
     } else {
@@ -265,5 +193,11 @@ core.clearTimer = function(){
   window.clearInterval(core.CD_TIMER);
   var cd = document.getElementById('timer-countdown');
   cd.setAttribute('style', 'color: black');
-  cd.innerHTML = '-';
+  cd.innerHTML = 'done';
+}
+
+core.reset = function(){
+  document.getElementById("reward").innerText = "-";
+  var queryStr = genProblem();
+  core.startEpisode(queryStr);
 }
