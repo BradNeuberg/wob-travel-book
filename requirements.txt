@@ -42,7 +42,7 @@ ptyprocess==0.5.2
 pyasn1==0.3.5
 pyasn1-modules==0.1.4
 pyglet==1.2.4
-Pygments==2.2.0
+Pygments==2.7.4
 python-dateutil==2.6.1
 python-gflags==3.1.1
 pyzmq==16.0.2
